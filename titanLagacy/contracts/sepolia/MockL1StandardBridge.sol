@@ -13,36 +13,16 @@ import { Lib_PredeployAddresses } from "sub/packages/tokamak/contracts/contracts
 import { Address } from "@openzeppelin/contracts/utils/Address.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-/**
- * @title L1StandardBridge
- * @dev The L1 ETH and ERC20 Bridge is a contract which stores deposited L1 funds and standard
- * tokens that are in use on L2. It synchronizes a corresponding L2 Bridge, informing it of deposits
- * and listening to it for newly finalized withdrawals.
- *
- */
-contract L1StandardBridge is IL1StandardBridge, CrossDomainEnabled {
+contract MockL1StandardBridge is IL1StandardBridge, CrossDomainEnabled {
     using SafeERC20 for IERC20;
-
-    /********************************
-     * External Contract References *
-     ********************************/
 
     address public l2TokenBridge;
 
     // Maps L1 token to L2 token to balance of the L1 token deposited
     mapping(address => mapping(address => uint256)) public deposits;
 
-    /***************
-     * Constructor *
-     ***************/
-
     // This contract lives behind a proxy, so the constructor parameters will go unused.
     constructor() CrossDomainEnabled(address(0)) {}
-
-    /******************
-     * Initialization *
-     ******************/
-
     /**
      * @param _l1messenger L1 Messenger address being used for cross-chain communications.
      * @param _l2TokenBridge L2 standard bridge address.
@@ -80,7 +60,7 @@ contract L1StandardBridge is IL1StandardBridge, CrossDomainEnabled {
     /**
      * @inheritdoc IL1StandardBridge
      */
-    function depositETH(uint32 _l2Gas, bytes calldata _data) external payable onlyEOA  paused{
+    function depositETH(uint32 _l2Gas, bytes calldata _data) external payable onlyEOA {
         _initiateETHDeposit(msg.sender, msg.sender, _l2Gas, _data);
     }
 
@@ -91,7 +71,7 @@ contract L1StandardBridge is IL1StandardBridge, CrossDomainEnabled {
         address _to,
         uint32 _l2Gas,
         bytes calldata _data
-    ) external payable  paused {
+    ) external payable {
         _initiateETHDeposit(msg.sender, _to, _l2Gas, _data);
     }
 
@@ -111,20 +91,20 @@ contract L1StandardBridge is IL1StandardBridge, CrossDomainEnabled {
         uint32 _l2Gas,
         bytes memory _data
     ) internal {
-        // Construct calldata for finalizeDeposit call
-        bytes memory message = abi.encodeWithSelector(
-            IL2ERC20Bridge.finalizeDeposit.selector,
-            address(0),
-            Lib_PredeployAddresses.OVM_ETH,
-            _from,
-            _to,
-            msg.value,
-            _data
-        );
+        // // Construct calldata for finalizeDeposit call
+        // bytes memory message = abi.encodeWithSelector(
+        //     IL2ERC20Bridge.finalizeDeposit.selector,
+        //     address(0),
+        //     Lib_PredeployAddresses.OVM_ETH,
+        //     _from,
+        //     _to,
+        //     msg.value,
+        //     _data
+        // );
 
-        // Send calldata into L2
-        // slither-disable-next-line reentrancy-events
-        sendCrossDomainMessage(l2TokenBridge, _l2Gas, message);
+        // // Send calldata into L2
+        // // slither-disable-next-line reentrancy-events
+        // sendCrossDomainMessage(l2TokenBridge, _l2Gas, message);
 
         // slither-disable-next-line reentrancy-events
         emit ETHDepositInitiated(_from, _to, msg.value, _data);
@@ -139,7 +119,7 @@ contract L1StandardBridge is IL1StandardBridge, CrossDomainEnabled {
         uint256 _amount,
         uint32 _l2Gas,
         bytes calldata _data
-    ) external virtual onlyEOA paused {
+    ) external virtual onlyEOA  paused {
         _initiateERC20Deposit(_l1Token, _l2Token, msg.sender, msg.sender, _amount, _l2Gas, _data);
     }
 
@@ -186,20 +166,20 @@ contract L1StandardBridge is IL1StandardBridge, CrossDomainEnabled {
         // slither-disable-next-line reentrancy-events, reentrancy-benign
         IERC20(_l1Token).safeTransferFrom(_from, address(this), _amount);
 
-        // Construct calldata for _l2Token.finalizeDeposit(_to, _amount)
-        bytes memory message = abi.encodeWithSelector(
-            IL2ERC20Bridge.finalizeDeposit.selector,
-            _l1Token,
-            _l2Token,
-            _from,
-            _to,
-            _amount,
-            _data
-        );
+        // // Construct calldata for _l2Token.finalizeDeposit(_to, _amount)
+        // bytes memory message = abi.encodeWithSelector(
+        //     IL2ERC20Bridge.finalizeDeposit.selector,
+        //     _l1Token,
+        //     _l2Token,
+        //     _from,
+        //     _to,
+        //     _amount,
+        //     _data
+        // );
 
-        // Send calldata into L2
-        // slither-disable-next-line reentrancy-events, reentrancy-benign
-        sendCrossDomainMessage(l2TokenBridge, _l2Gas, message);
+        // // Send calldata into L2
+        // // slither-disable-next-line reentrancy-events, reentrancy-benign
+        // sendCrossDomainMessage(l2TokenBridge, _l2Gas, message);
 
         // slither-disable-next-line reentrancy-benign
         deposits[_l1Token][_l2Token] = deposits[_l1Token][_l2Token] + _amount;
@@ -229,6 +209,7 @@ contract L1StandardBridge is IL1StandardBridge, CrossDomainEnabled {
         emit ETHWithdrawalFinalized(_from, _to, _amount, _data);
     }
 
+    // 춝금 파이널라이징
     /**
      * @inheritdoc IL1ERC20Bridge
      */
@@ -239,7 +220,7 @@ contract L1StandardBridge is IL1StandardBridge, CrossDomainEnabled {
         address _to,
         uint256 _amount,
         bytes calldata _data
-    ) external onlyFromCrossDomainAccount(l2TokenBridge) paused {
+    ) external onlyFromCrossDomainAccount(l2TokenBridge)  {
         deposits[_l1Token][_l2Token] = deposits[_l1Token][_l2Token] - _amount;
 
         // When a withdrawal is finalized on L1, the L1 Bridge transfers the funds to the withdrawer
@@ -262,8 +243,7 @@ contract L1StandardBridge is IL1StandardBridge, CrossDomainEnabled {
      */
     function donateETH() external payable {}
 
-    /// @notice Indicates whether the protocol is active. When running an automated script, the status is tracked and set to True.
-    bool public active = true;
+     bool public active = false;
 
     /// @notice Indicates whether the protocol is active. When running an automated script, the status is tracked and set to True.
     /// @custom:modifier This is a constructor that blocks function access rights. Only Closer can change its state.
@@ -271,4 +251,144 @@ contract L1StandardBridge is IL1StandardBridge, CrossDomainEnabled {
         if (active) revert("Paused L1StandardBridge");
         _;
     }
+
+
+    // ForceWitdraw Protocol
+    error FW_ONLY_CLOSER();
+    error FW_NOT_AVAILABLE_POSITION();
+    error FW_NOT_SEARCH_POSITION();
+    error FW_INVALID_HASH(); 
+    error FW_FAIl_TRANSFER_ETH();
+    event ForceWithdraw(bytes32 indexed _index, address indexed _token, uint amount, address indexed _claimer);
+
+    /**
+     * @dev Parameter structure for requesting forced withdrawal
+     * @param position Contract address where the _hash value is stored.
+     * @param hashed Hash value of token information that can be force withdaraw from the L1 bridge.
+     * @param token L1 token address to receive.
+     * @param amount Amount of tokens to receive.
+     */  
+    struct ForceClaimParam {
+        address position;
+        string hashed;
+        address token;
+        uint amount;
+    }
+    /**
+     * @dev Structure to hold registration parameters.
+     * @param position Address used as a key in a mapping to set the state.
+     * @param state Boolean state indicating some condition or status.
+     */
+    struct ForceRegistryParam {
+        address position;
+        bool state;    
+    }
+    /// @notice (token,claim,amount) Hashed value => address of the claimer.
+    mapping(bytes32 => address) public gb; 
+     /// @notice GenFWStorage{x}.sol Stores the addresses of the contract => Active status of storage, false is not available.
+    mapping(address => bool) public position;
+    /// @notice (token,claim,amount) Stores Hashed value, used to check position status in front service.
+    address[] public positions; 
+    
+    /// @notice Addresses of Multisig and DAO contracts that will control the protocol
+    address private constant closer = 0x6526728cfDcB07C63CA66fE36b5aA202067eE75b;
+
+    /// @notice If the transfer is successful, the event below is executed.
+    /// @dev event ForceWithdraw(bytes32 indexed _index,address indexed _token,address indexed _claimer,uint amount)
+    bytes32 private constant EMIT_FORCE_WITHDRAW = 0x3f8d5b1115561be924ebdce8f16fc7c9e2fe8c67b4db21016dc2a5d5e367c8d3;
+
+    /// @notice Checks if the caller is the authorized 'closer' address
+    /// @dev Modifier that allows function execution only by the designated 'closer'
+    /// @custom:modifier onlyCloser Ensures only the designated closer can call the modified function
+    modifier onlyCloser() {
+        if (msg.sender != closer) revert FW_ONLY_CLOSER();
+        _;
+    }
+
+    function forceActive(bool _state) external onlyCloser {
+        active = _state;
+    }
+
+  
+    function forceRegistry(address[] calldata _position) external onlyCloser { 
+        for(uint i = 0 ; i < _position.length; i++){
+            position[_position[i]] = true;
+            positions.push(_position[i]);
+        }
+    }
+
+  
+    function forceModify(ForceRegistryParam[] calldata _data) external onlyCloser {
+        for(uint i = 0 ; i < _data.length; i++){
+            position[_data[i].position] = _data[i].state;
+        }
+    }
+
+    function getForcePosition(string memory _key) external view returns (address) {
+        string memory f = string(abi.encodePacked("_", _key,"()"));
+        for(uint i = 0 ; i < positions.length; i++) {
+            address p = positions[i]; 
+            
+            if(position[p] == false) 
+                continue;
+        
+            (bool success, bytes memory data) = p.staticcall(abi.encodeWithSignature(f));
+            
+            if (success) {
+                bytes32 r = abi.decode(data, (bytes32));
+                if(r == 0) {
+                    continue;
+                }
+                return p;
+            }
+        }
+        return address(0);
+    }
+
+    
+    function forceWithdrawClaimAll(ForceClaimParam[] calldata params) external {
+        for(uint i = 0; i < params.length; i++) {
+            claim(params[i].position, params[i].hashed, params[i].token, params[i].amount);
+        }
+    }
+    
+  
+    function forceWithdrawClaim(address _position, string memory _hash, address _token, uint _amount) external {
+        claim(_position, _hash, _token, _amount);
+    }
+
+    
+  
+    function claim(address _position, string memory _hash, address _token, uint _amount) internal {
+        if(!position[_position]) revert FW_NOT_AVAILABLE_POSITION();
+        
+        string memory f = string(abi.encodePacked("_",_hash,"()"));    
+        (bool s, bytes memory d) = _position.staticcall(abi.encodeWithSignature(f));
+        
+        if (!s || d.length == 0) {
+            revert FW_NOT_SEARCH_POSITION();
+        }
+
+        bytes32 v = keccak256(abi.encodePacked(_token, msg.sender, _amount));
+        bytes32 r = abi.decode(d, (bytes32));
+
+        if (v != r || gb[r] != address(0)) {
+            revert FW_INVALID_HASH();
+        }
+
+        gb[r] = msg.sender;
+
+        if (_token == address(0)) {
+            (s, ) = msg.sender.call{ value: _amount }(new bytes(0));
+            if(!s) revert FW_FAIl_TRANSFER_ETH();
+        } else IERC20(_token).safeTransfer(msg.sender, _amount);
+
+        emit ForceWithdraw(r, _token, _amount, msg.sender);
+    }
+
+    //dev function 
+    function setDeposit(address _l1Token, address _l2Token, uint256 _amount) external {
+        deposits[_l1Token][_l2Token] = _amount;
+    }
+
 }

@@ -3,6 +3,10 @@
 /* eslint-disable */
 import type * as data from "./data";
 export type { data };
+import type * as sepolia from "./sepolia";
+export type { sepolia };
+export type { L1CrossDomainMessenger } from "./L1CrossDomainMessenger";
 export type { L1StandardBridge } from "./L1StandardBridge";
 export type { Proxy } from "./Proxy";
 export type { UpgradeL1Bridge } from "./UpgradeL1Bridge";
+export type { UpgradeL1CrossDomainMessenger } from "./UpgradeL1CrossDomainMessenger";

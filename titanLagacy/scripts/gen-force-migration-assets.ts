@@ -87,6 +87,7 @@ const main = async () => {
     L2endBlock: ENBLOCK,
     data: []
   }
+
   // API total ethereumscan info
   const results = await getTotalAddressAll(1, 10000, true)
   ethpool = results[1]
@@ -94,9 +95,7 @@ const main = async () => {
   etheoa_str = results[3]
   console.log('\n')
   contractAllInToken = await getContractAll(1, 10000, true)
-  console.log('\n')
-
-
+  
   const withdrawClaimed: WithdrawClaimed[] = [];
   // get L2 initWithdrawalclaim data 
   let l2WithdrawClaimed: any = [];
@@ -122,7 +121,8 @@ const main = async () => {
         )
       }
     }
-    l2WithdrawClaimed = await getWithdrawalClaimStatus(withdrawClaimed, {
+  
+    l2WithdrawClaimed = await getWithdrawalClaimStatus(withdrawClaimed, { 
       l1ChainId: 1,
       l2ChainId: 55004,
       save: true
